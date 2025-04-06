@@ -1,0 +1,26 @@
+name: 'Tencent EdgeOne Purge Action'
+description: 'Purge cache in Tencent EdgeOne'
+author: '盧瞳/LuTong'
+
+inputs:
+  secret_id:
+    description: 'Tencent Cloud Secret ID'
+    required: true
+  secret_key:
+    description: 'Tencent Cloud Secret Key'
+    required: true
+  zone_id:
+    description: 'EdgeOne Zone ID'
+    required: true
+  type:
+    description: 'Cache type'
+    required: true
+    default: 'purge_host'
+    values: ['purge_host']
+  hostnames:
+    description: 'Comma-separated list of hostnames to purge'
+    required: false
+
+runs:
+  using: 'node20'
+  main: 'dist/main.js'

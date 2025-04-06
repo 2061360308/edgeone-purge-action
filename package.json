@@ -1,0 +1,21 @@
+{
+  "name": "edgeone-purge-action",
+  "version": "1.0.0",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "rollup -c",
+    "test": "npx act -j test --secret-file .env"
+  },
+  "devDependencies": {
+    "@actions/core": "^1.11.1",
+    "@actions/github": "^6.0.0",
+    "@rollup/plugin-commonjs": "^28.0.3",
+    "@rollup/plugin-node-resolve": "^16.0.1",
+    "act": "^0.0.6",
+    "dotenv": "^16.4.7",
+    "rollup": "^4.39.0"
+  },
+  "dependencies": {
+    "node-fetch": "^3.3.2"
+  }
+}

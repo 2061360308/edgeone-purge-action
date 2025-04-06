@@ -1,0 +1,23 @@
+name: Test EdgeOne Purge Action
+on: [push]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'  # 指定使用Node.js 18.x版本
+      - name: install independent packages
+        run: |
+          npm install pnpm -g
+          pnpm install
+      - name: Run EdgeOne Purge
+        uses: ./
+        with:
+          secret_id: ${{ secrets.SECRET_ID }}
+          secret_key: ${{ secrets.SECRET_KEY }}
+          zone_id: ${{ secrets.ZONE_ID }}
+          hostnames: ${{ secrets.HOSTNAMES }}
