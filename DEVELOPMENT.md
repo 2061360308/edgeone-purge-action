@@ -31,7 +31,7 @@ pnpm run commit
 
 #### 发布方法
 ```bash
-pnpm run publish
+pnpm run release
 ```
 
 ## 测试

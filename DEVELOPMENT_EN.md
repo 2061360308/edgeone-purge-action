@@ -31,7 +31,7 @@ pnpm run commit
 
 #### Publishing
 ```bash
-pnpm run publish
+pnpm run release
 ```
 
 ## Testing
