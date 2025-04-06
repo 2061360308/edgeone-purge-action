@@ -1,6 +1,6 @@
 {
   "name": "edgeone-purge-action",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "main": "dist/main.js",
   "scripts": {
     "prepare": "husky",
@@ -69,8 +69,7 @@
         }
       ]
     },
-    "skip": {
-      "tag": true
-    }
+    "sign": false,
+    "tag-prefix": "v"
   }
 }
