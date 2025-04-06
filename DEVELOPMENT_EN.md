@@ -34,6 +34,8 @@ pnpm run commit
 pnpm run release
 ```
 
+> Use the command `npx standard-version --skip.tag --skip.commit --first-release` to update only the CHANGELOG.md file.
+
 ## Testing
 ### Basic Test Scripts
 1. Build:

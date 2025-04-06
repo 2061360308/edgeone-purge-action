@@ -34,6 +34,8 @@ pnpm run commit
 pnpm run release
 ```
 
+> 使用命令 `npx standard-version --skip.tag --skip.commit --first-release` 来只更新CHANGELOG.md文件。
+
 ## 测试
 ### 简单测试脚本
 1. 构建
