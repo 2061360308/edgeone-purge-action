@@ -3,19 +3,31 @@
   "version": "1.0.0",
   "main": "dist/main.js",
   "scripts": {
+    "prepare": "husky",
+    "commit": "pnpx git-cz",
     "build": "rollup -c",
-    "test": "npx act -j test --secret-file .env"
+    "release": "standard-version",
+    "test": "node test/test.js",
+    "docker-test": "act --workflows test/test.yml --secret-file .env"
   },
   "devDependencies": {
     "@actions/core": "^1.11.1",
     "@actions/github": "^6.0.0",
+    "@commitlint/cli": "^19.8.0",
+    "@commitlint/config-conventional": "^19.8.0",
+    "@commitlint/cz-commitlint": "^19.8.0",
+    "@commitlint/types": "^19.8.0",
     "@rollup/plugin-commonjs": "^28.0.3",
     "@rollup/plugin-node-resolve": "^16.0.1",
     "act": "^0.0.6",
     "dotenv": "^16.4.7",
-    "rollup": "^4.39.0"
+    "husky": "^9.1.7",
+    "rollup": "^4.39.0",
+    "standard-version": "^9.5.0"
   },
-  "dependencies": {
-    "node-fetch": "^3.3.2"
+  "config": {
+    "commitizen": {
+      "path": "@commitlint/cz-commitlint"
+    }
   }
 }

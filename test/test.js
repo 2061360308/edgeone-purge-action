@@ -10,11 +10,12 @@ if (fs.existsSync('.env')) {
 process.env.INPUT_SECRET_ID = process.env.SECRET_ID || 'your_test_secret_id';
 process.env.INPUT_SECRET_KEY = process.env.SECRET_KEY || 'your_test_secret_key';
 process.env.INPUT_ZONE_ID = process.env.ZONE_ID || 'your_test_zone_id';
+process.env.INPUT_TYPE = process.env.TYPE || 'purge_host';
 process.env.INPUT_HOSTNAMES = process.env.HOSTNAMES || 'test.example.com';
 
 // 运行主程序
 try {
-  require('./dist/main.js');
+  require('../dist/main.js');
 } catch (error) {
   console.error('测试失败:', error);
   process.exit(1);
