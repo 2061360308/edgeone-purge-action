@@ -1,12 +1,12 @@
 {
   "name": "edgeone-purge-action",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "main": "dist/main.js",
   "scripts": {
     "prepare": "husky",
     "commit": "pnpx git-cz",
     "build": "rollup -c",
-    "release": "standard-version",
+    "release": "standard-version && git push --follow-tags",
     "test": "node test/test.js",
     "docker-test": "act --workflows test/test.yml --secret-file .env"
   },
