@@ -2,6 +2,10 @@ name: 'Tencent EdgeOne Purge Action'
 description: 'Purge cache in Tencent EdgeOne'
 author: '盧瞳/LuTong'
 
+branding:
+  icon: 'zap'
+  color: 'blue'
+
 inputs:
   secret_id:
     description: 'Tencent Cloud Secret ID'
