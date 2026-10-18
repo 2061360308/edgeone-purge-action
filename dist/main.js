@@ -10,8 +10,32 @@ function getDefaultExportFromCjs (x) {
 
 var main$1 = {};
 
+const splitTargets = (value) =>
+  String(value || "")
+    .split(/[\n,]+/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+const validateDirectoryTargets = (targets) => {
+  for (const target of targets) {
+    let parsed;
+    try {
+      parsed = new URL(target);
+    } catch {
+      throw new Error(`目录刷新地址无效: ${target}`);
+    }
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      throw new Error(`目录刷新地址必须使用 http/https 协议: ${target}`);
+    }
+  }
+};
+
 const hostNamePurge = (ZONE_ID, EDGEONE_HOSTNAMES) => {
-  const HOSTNAMES = EDGEONE_HOSTNAMES.split(",");
+  const HOSTNAMES = splitTargets(EDGEONE_HOSTNAMES);
+
+  if (!HOSTNAMES.length) {
+    throw new Error("hostnames 不能为空");
+  }
 
   return JSON.stringify({
     ZoneId: ZONE_ID,
@@ -20,9 +44,30 @@ const hostNamePurge = (ZONE_ID, EDGEONE_HOSTNAMES) => {
   });
 };
 
+const prefixPurge = (ZONE_ID, EDGEONE_PATHS, METHOD = "invalidate") => {
+  const PATHS = splitTargets(EDGEONE_PATHS);
+
+  if (!PATHS.length) {
+    throw new Error("paths 不能为空");
+  }
+  if (METHOD !== "invalidate" && METHOD !== "delete") {
+    throw new Error(`不支持的 method 值: ${METHOD}`);
+  }
+
+  validateDirectoryTargets(PATHS);
+
+  return JSON.stringify({
+    ZoneId: ZONE_ID,
+    Type: "purge_prefix",
+    Method: METHOD,
+    Targets: PATHS,
+  });
+};
+
 var genderPayload = /*#__PURE__*/Object.freeze({
 	__proto__: null,
-	hostNamePurge: hostNamePurge
+	hostNamePurge: hostNamePurge,
+	prefixPurge: prefixPurge
 });
 
 var requests_1;
@@ -131,19 +176,6 @@ function requireRequests () {
 	    "X-TC-Version": version,
 	    "X-TC-Region": region,
 	  });
-	  // const response = await fetch(`https://${endpoint}`, {
-	  //   method: "POST",
-	  //   headers: {
-	  //     Authorization: authorization,
-	  //     "Content-Type": "application/json; charset=utf-8",
-	  //     Host: endpoint,
-	  //     "X-TC-Action": action,
-	  //     "X-TC-Timestamp": timestamp.toString(),
-	  //     "X-TC-Version": version,
-	  //     "X-TC-Region": region,
-	  //   },
-	  //   body: payload,
-	  // });
 
 	  return response;
 	};
@@ -158,50 +190,86 @@ function requireMain () {
 	if (hasRequiredMain) return main$1;
 	hasRequiredMain = 1;
 	const core = require$$2;
-	const { hostNamePurge } = genderPayload;
+	const { hostNamePurge, prefixPurge } = genderPayload;
 	const requests = requireRequests();
 
 	async function run() {
 	  try {
-	    const SECRET_ID = core.getInput('secret_id');
-	    const SECRET_KEY = core.getInput('secret_key');
-	    const ZONE_ID = core.getInput('zone_id');
-	    const HOSTNAMES = core.getInput('hostnames');
-	    const type = core.getInput('type'); // 新增的输入参数，默认为 'purge_host'
+	    const SECRET_ID = core.getInput("secret_id");
+	    const SECRET_KEY = core.getInput("secret_key");
+	    const ZONE_ID = core.getInput("zone_id");
+	    const HOSTNAMES = core.getInput("hostnames");
+	    const PATHS = core.getInput("paths");
+	    const METHOD = core.getInput("method") || "invalidate";
+	    const type = core.getInput("type"); // 默认 'purge_host'
 
 	    // 检查必要参数
 	    const missingParams = [];
-	    if (!SECRET_ID) missingParams.push('secret_id');
-	    if (!SECRET_KEY) missingParams.push('secret_key');
-	    if (!ZONE_ID) missingParams.push('zone_id');
-	    if (!type) missingParams.push('type');
-	    
+	    if (!SECRET_ID) missingParams.push("secret_id");
+	    if (!SECRET_KEY) missingParams.push("secret_key");
+	    if (!ZONE_ID) missingParams.push("zone_id");
+	    if (!type) missingParams.push("type");
+
 	    if (missingParams.length > 0) {
-	      const errorMsg = `缺少必要的输入参数: ${missingParams.join(', ')}`;
+	      const errorMsg = `缺少必要的输入参数: ${missingParams.join(", ")}`;
 	      throw new Error(errorMsg);
 	    }
 
 	    let payload;
-	    if (type === 'purge_host' && HOSTNAMES) {
+	    switch (type) {
+	      case "purge_host":
+	        if (!HOSTNAMES) {
+	          throw new Error("当type为'purge_host'时，必须提供hostnames参数");
+	        }
 	        payload = hostNamePurge(ZONE_ID, HOSTNAMES);
+	        break;
+	      case "purge_prefix":
+	        if (!PATHS) {
+	          throw new Error(
+	            "当type为'purge_prefix'时，必须提供paths参数（目录 URL，逗号或换行分隔）"
+	          );
+	        }
+	        payload = prefixPurge(ZONE_ID, PATHS, METHOD);
+	        break;
+	      default:
+	        throw new Error(`不支持的type值: ${type}`);
 	    }
 
-	    if (payload) {
-	      const response = await requests(SECRET_ID, SECRET_KEY, payload);
+	    const typeLabel = type === "purge_prefix" ? "目录" : "Hostname";
+	    const response = await requests(SECRET_ID, SECRET_KEY, payload);
 
-	      core.info(`API响应: ${JSON.stringify(response)}`);
+	    core.info(`API响应: ${JSON.stringify(response, null, 2)}`);
 
-	      // 检查失败列表
-	      if (response.Response.FailedList?.length > 0) {
-	        core.error(`部分Host刷新失败: ${JSON.stringify(response.Response.FailedList)}`);
-	      }
+	    const apiResponse = response?.Response ?? {};
 
-	      core.info(`Hostname刷新成功: ${JSON.stringify({
-	        JobId: response.Response.JobId,
-	        RequestId: response.Response.RequestId,
-	      })}`);
+	    if (apiResponse.Error) {
+	      throw new Error(
+	        `API错误: [${apiResponse.Error.Code}] ${apiResponse.Error.Message}`
+	      );
 	    }
-	    
+
+	    // 检查失败列表
+	    if (apiResponse.FailedList?.length > 0) {
+	      core.error(
+	        `部分${typeLabel}刷新失败: ${JSON.stringify(
+	          apiResponse.FailedList,
+	          null,
+	          2
+	        )}`
+	      );
+	      core.setFailed(`部分${typeLabel}刷新失败`);
+	    }
+
+	    core.info(
+	      `${typeLabel}刷新任务已提交: ${JSON.stringify(
+	        {
+	          JobId: apiResponse.JobId,
+	          RequestId: apiResponse.RequestId,
+	        },
+	        null,
+	        2
+	      )}`
+	    );
 	  } catch (error) {
 	    // 网络错误处理
 	    if (error.code === "ENOTFOUND") {

@@ -17,13 +17,19 @@ inputs:
     description: 'EdgeOne Zone ID'
     required: true
   type:
-    description: 'Cache type'
+    description: 'Cache type: purge_host or purge_prefix (directory)'
     required: true
     default: 'purge_host'
-    values: ['purge_host']
   hostnames:
-    description: 'Comma-separated list of hostnames to purge'
+    description: 'Comma-separated list of hostnames to purge (type=purge_host)'
     required: false
+  paths:
+    description: 'Comma/newline-separated list of directory URLs to purge (type=purge_prefix)'
+    required: false
+  method:
+    description: 'Purge method for directory refresh: invalidate or delete'
+    required: false
+    default: 'invalidate'
 
 runs:
   using: 'node20'

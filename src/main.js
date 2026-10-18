@@ -1,5 +1,5 @@
 const core = require("@actions/core");
-const { hostNamePurge } = require("./genderPayload.js");
+const { hostNamePurge, prefixPurge } = require("./genderPayload.js");
 const requests = require("./requests.js");
 
 async function run() {
@@ -8,7 +8,9 @@ async function run() {
     const SECRET_KEY = core.getInput("secret_key");
     const ZONE_ID = core.getInput("zone_id");
     const HOSTNAMES = core.getInput("hostnames");
-    const type = core.getInput("type"); // 新增的输入参数，默认为 'purge_host'
+    const PATHS = core.getInput("paths");
+    const METHOD = core.getInput("method") || "invalidate";
+    const type = core.getInput("type"); // 默认 'purge_host'
 
     // 检查必要参数
     const missingParams = [];
@@ -30,37 +32,53 @@ async function run() {
         }
         payload = hostNamePurge(ZONE_ID, HOSTNAMES);
         break;
+      case "purge_prefix":
+        if (!PATHS) {
+          throw new Error(
+            "当type为'purge_prefix'时，必须提供paths参数（目录 URL，逗号或换行分隔）"
+          );
+        }
+        payload = prefixPurge(ZONE_ID, PATHS, METHOD);
+        break;
       default:
         throw new Error(`不支持的type值: ${type}`);
     }
 
-    if (payload) {
-      const response = await requests(SECRET_ID, SECRET_KEY, payload);
+    const typeLabel = type === "purge_prefix" ? "目录" : "Hostname";
+    const response = await requests(SECRET_ID, SECRET_KEY, payload);
 
-      core.info(`API响应: ${JSON.stringify(response, null, 2)}`);
+    core.info(`API响应: ${JSON.stringify(response, null, 2)}`);
 
-      // 检查失败列表
-      if (response.Response.FailedList?.length > 0) {
-        core.error(
-          `部分Host刷新失败: ${JSON.stringify(
-            response.Response.FailedList,
-            null,
-            2
-          )}`
-        );
-      }
+    const apiResponse = response?.Response ?? {};
 
-      core.info(
-        `Hostname刷新成功: ${JSON.stringify(
-          {
-            JobId: response.Response.JobId,
-            RequestId: response.Response.RequestId,
-          },
+    if (apiResponse.Error) {
+      throw new Error(
+        `API错误: [${apiResponse.Error.Code}] ${apiResponse.Error.Message}`
+      );
+    }
+
+    // 检查失败列表
+    if (apiResponse.FailedList?.length > 0) {
+      core.error(
+        `部分${typeLabel}刷新失败: ${JSON.stringify(
+          apiResponse.FailedList,
           null,
           2
         )}`
       );
+      core.setFailed(`部分${typeLabel}刷新失败`);
     }
+
+    core.info(
+      `${typeLabel}刷新任务已提交: ${JSON.stringify(
+        {
+          JobId: apiResponse.JobId,
+          RequestId: apiResponse.RequestId,
+        },
+        null,
+        2
+      )}`
+    );
   } catch (error) {
     // 网络错误处理
     if (error.code === "ENOTFOUND") {
