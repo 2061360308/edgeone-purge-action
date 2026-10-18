@@ -13,6 +13,5 @@ module.exports = {
     commonjs({
       requireReturnsDefault: 'auto'
     })
-  ],
-  external: ['@actions/core', 'node-fetch']
+  ]
 };
